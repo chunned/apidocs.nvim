@@ -105,6 +105,7 @@ local function apidocs_search(opts)
   end
   local search_dirs = get_data_dirs(opts)
 
+
   local default_entry_maker = make_entry.gen_from_vimgrep()
   local function entry_maker(entry)
     local r = default_entry_maker(entry)
