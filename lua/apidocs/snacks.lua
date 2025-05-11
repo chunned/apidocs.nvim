@@ -28,12 +28,14 @@ local function get_data_dirs(opts)
   local dirs = {}
   local install_dirs = vim.fn.readdir(data_dir)
   for _, source in ipairs(opts.restrict_sources) do
-    for _, entry in ipairs(install_dirs) do
-      if vim.fn.isdirectory(data_dir .. entry) == 1 then
-        if entry == source then
-          table.insert(dirs, data_dir .. entry .. "/")
-        elseif entry:match("^" .. source) then
-          -- no exact match found, check for a partial match
+    local dir = data_dir .. source .. "/"
+    if vim.fn.isdirectory(dir) == 1 then
+      table.insert(dirs, dir)
+    else
+      for _, entry in ipairs(install_dirs) do
+        if entry:match("^" .. source .. "~%d+") then
+          -- check for partial match
+          -- e.g. "python" -> "python~3.12"
           table.insert(dirs, data_dir .. entry .. "/")
         end
       end
