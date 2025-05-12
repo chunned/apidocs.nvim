@@ -55,25 +55,29 @@ end
 
 local apidocs_open -- forward declaration
 
-local function apidocs_ensure_install(opts)
-  local installed_docs = get_installed_docs(opts)
-  for _, source in ipairs(opts.ensure_installed) do
+local function ensure_install_and_then(languages, cont)
+  local installed_docs = get_installed_docs()
+  for _, source in ipairs(languages) do
     if not vim.tbl_contains(installed_docs, source) then
       if slugs_to_mtimes == nil then
         install.fetch_slugs_and_mtimes_and_then(function(slugs_to_mtimes)
           install.apidoc_install(source, slugs_to_mtimes, function()
-            apidocs_open(opts, slugs_to_mtimes)
+            cont(slugs_to_mtimes)
           end)
         end)
-        return
       else
         install.apidoc_install(source, slugs_to_mtimes, function()
-          apidocs_open(opts, slugs_to_mtimes)
+          cont(slugs_to_mtimes)
         end)
-        return
       end
     end
   end
+end
+
+local function ensure_install(languages)
+  ensure_install_and_then(languages, function()
+    vim.notify("Apidocs ensure_install complete!")
+  end)
 end
 
 function apidocs_open(opts)
@@ -87,7 +91,12 @@ function apidocs_open(opts)
   local installed_docs = get_installed_docs(opts)
 
   if opts and opts.ensure_installed then
-    apidocs_ensure_install(opts)
+    return ensure_install_and_then(opts.ensure_installed, function()
+      -- call apidocs_open() again, but remove ensure_installed from opts
+      -- otherwise this would loop infinitely
+      local new_opts = { picker = opts.picker }
+      apidocs_open(new_opts)
+    end)
   end
 
   if picker == "snacks" then
@@ -188,7 +197,7 @@ return {
   apidocs_install = install.apidocs_install,
   apidocs_open = apidocs_open,
   apidocs_search = apidocs_search,
-  apidocs_ensure_install = apidocs_ensure_install,
+  ensure_install = ensure_install,
   data_folder = common.data_folder,
   open_doc_in_new_window = common.open_doc_in_new_window,
   open_doc_in_cur_window = common.open_doc_in_cur_window,
